@@ -37,15 +37,10 @@ run () {
 		qemuextra="-S -gdb tcp::$gdbport"
 	fi
 
-	qemucommand="$qemu -nographic $qemuopts -serial file:jos.out -monitor null -no-reboot $qemuextra"
-	if $verbose; then
-		echo $qemucommand 1>&2
-	fi
-
 	t0=`date +%s.%N 2>/dev/null`
 	(
 		ulimit -t $timeout
-		exec $qemucommand
+		exec $qemu -nographic $qemuopts -serial file:jos.out -monitor null -no-reboot $qemuextra
 	) >$out 2>$err &
 	PID=$!
 
@@ -121,9 +116,6 @@ pass () {
 fail () {
 	passfailmsg WRONG "$@"
 	partpos=`expr $partpos + $pts`
-	if $verbose; then
-		exit 1
-	fi
 }
 
 
@@ -196,6 +188,10 @@ checkregexps () {
 			if egrep "^$i\$" jos.out >/dev/null
 			then
 				echo "got unexpected line '$i'"
+				if $verbose
+				then
+					exit 1
+				fi
 				okay=no
 			fi
 			not=false
@@ -204,6 +200,10 @@ checkregexps () {
 			if [ $? -ne 0 ]
 			then
 				echo "missing '$i'"
+				if $verbose
+				then
+					exit 1
+				fi
 				okay=no
 			fi
 			not=false
@@ -252,5 +252,6 @@ runtest1 () {
 		shift
 	fi
 	runtest "$tag" "DEFS='-DTEST=${dir}_${prog}' $runtest1_defs" "$check" "$@"
+
 }
 
