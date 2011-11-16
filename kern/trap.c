@@ -102,7 +102,7 @@ trap_init(void)
 	extern void irq14_handler();
 	extern void irq15_handler();
 
-		SETGATE(idt[T_DIVIDE],  0, GD_KT, routine_divide,  0);
+	SETGATE(idt[T_DIVIDE],  0, GD_KT, routine_divide,  0);
 	SETGATE(idt[T_DEBUG],   0, GD_KT, routine_debug,   0);
 	SETGATE(idt[T_NMI],     0, GD_KT, routine_nmi,     0);
 	SETGATE(idt[T_BRKPT],   0, GD_KT, routine_brkpt,   3);
@@ -220,6 +220,17 @@ trap_dispatch(struct Trapframe *tf)
 	case T_PGFLT:
 		page_fault_handler(tf);
 		return;
+	case T_BRKPT:
+		monitor(tf);
+		return;
+	case T_SYSCALL:
+		tf->tf_regs.reg_eax = syscall(tf->tf_regs.reg_eax,
+					      tf->tf_regs.reg_edx,
+					      tf->tf_regs.reg_ecx,
+					      tf->tf_regs.reg_ebx,
+					      tf->tf_regs.reg_edi,
+					      tf->tf_regs.reg_esi);
+		return;
 	}
 
 	// Unexpected trap: The user process or the kernel has a bug.
@@ -279,8 +290,8 @@ page_fault_handler(struct Trapframe *tf)
 	fault_va = rcr2();
 
 	// Handle kernel-mode page faults.
-
-	// LAB 3: Your code here.
+	if ((tf->tf_cs & 0x3) == 0)
+		panic("(page_fault_handler) page fault in kernel lol");
 
 	// We've already handled kernel-mode exceptions, so if we get here,
 	// the page fault happened in user mode.

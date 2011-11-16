@@ -19,8 +19,7 @@ sys_cputs(const char *s, size_t len)
 {
 	// Check that the user has permission to read memory [s, s+len).
 	// Destroy the environment if not.
-
-	// LAB 3: Your code here.
+	user_mem_assert(curenv, (void*)s, len, PTE_U | PTE_P);
 
 	// Print the string supplied by the user.
 	cprintf("%.*s", len, s);
@@ -68,8 +67,58 @@ syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
 {
 	// Call the function corresponding to the 'syscallno' parameter.
 	// Return any appropriate return value.
-	// LAB 3: Your code here.
+	int errno = 0;
 
-	panic("syscall not implemented");
+	switch(syscallno) {
+	case SYS_cputs:
+		sys_cputs((const char*)a1, (size_t)a2);
+		break;
+	case SYS_cgetc:
+		errno = sys_cgetc();
+		break;
+	case SYS_getenvid:
+		errno = sys_getenvid();
+		break;
+	case SYS_env_destroy:
+		errno = sys_env_destroy((envid_t)a1);
+		break;
+	/* case SYS_yield: */
+	/* 	sys_yield(); */
+	/* 	break; */
+	/* case SYS_exofork: */
+	/* 	errno = sys_exofork(); */
+	/* 	break; */
+	/* case SYS_env_set_status: */
+	/* 	errno = sys_env_set_status((envid_t)a1, (int)a2); */
+	/* 	break; */
+	/* case SYS_page_alloc: */
+	/* 	errno = sys_page_alloc((envid_t)a1, (void*)a2, (int)a3); */
+	/* 	break; */
+	/* case SYS_page_map: */
+	/* 	errno = sys_page_map((envid_t)a1, (void*)a2, */
+	/* 			     (envid_t)a3, (void*)a4, (int)a5); */
+	/* 	break; */
+	/* case SYS_page_unmap: */
+	/* 	errno = sys_page_unmap((envid_t)a1, (void*)a2); */
+	/* 	break; */
+	/* case SYS_env_set_pgfault_upcall: */
+	/* 	errno = sys_env_set_pgfault_upcall((envid_t)a1, (void*)a2); */
+	/* 	break; */
+	/* case SYS_ipc_try_send: */
+	/* 	errno = sys_ipc_try_send((envid_t)a1, (uint32_t)a2, (void*)a3, */
+	/* 				 (unsigned int)a4); */
+	/* 	break; */
+	/* case SYS_ipc_recv: */
+	/* 	errno = sys_ipc_recv((void*)a1); */
+	/* 	break; */
+	/* case SYS_env_set_trapframe: */
+	/* 	errno = sys_env_set_trapframe((envid_t)a1, (struct Trapframe*)a2); */
+	/* 	break; */
+			
+	default:
+		errno = -E_INVAL;
+	}
+
+	return errno;
 }
 
