@@ -55,7 +55,16 @@ struct Segdesc gdt[NCPU + 5] =
 
 	// Per-CPU TSS descriptors (starting from GD_TSS0) are initialized
 	// in trap_init_percpu()
-	[GD_TSS0 >> 3] = SEG_NULL
+	// TODO - not sure about this.
+	[GD_TSS0 >> 3] = SEG_NULL, 
+	[(GD_TSS0 >> 3) + 1] = SEG_NULL,
+	[(GD_TSS0 >> 3) + 2] = SEG_NULL,
+	[(GD_TSS0 >> 3) + 3] = SEG_NULL,
+	[(GD_TSS0 >> 3) + 4] = SEG_NULL,
+	[(GD_TSS0 >> 3) + 5] = SEG_NULL,
+	[(GD_TSS0 >> 3) + 6] = SEG_NULL,
+	[(GD_TSS0 >> 3) + 7] = SEG_NULL
+	
 };
 
 struct Pseudodesc gdt_pd = {
@@ -545,6 +554,9 @@ env_run(struct Env *e)
 	curenv->env_runs++;
 
 	lcr3(PADDR(curenv->env_pgdir));
+
+	// TODO - put the unlock in env_pop_tf? 
+	unlock_kernel();
 	env_pop_tf(&curenv->env_tf);
 }
 
