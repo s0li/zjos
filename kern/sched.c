@@ -27,8 +27,22 @@ sched_yield(void)
 	// idle environment (env_type == ENV_TYPE_IDLE).  If there are
 	// no runnable environments, simply drop through to the code
 	// below to switch to this CPU's idle environment.
+	int thiscpu_id = cpunum();
+	int curenv_id = (curenv == NULL) ? thiscpu_id : ENVX(curenv->env_id);
 
 	// LAB 4: Your code here.
+	for (i = (curenv_id + 1) % NENV; i != curenv_id; i = (i + 1) % NENV) {
+		if (envs[i].env_status == ENV_TYPE_IDLE ||
+		    envs[i].env_status == ENV_RUNNING ||
+		    i == thiscpu_id)
+			continue;
+
+		if (envs[i].env_status == ENV_RUNNABLE)
+			env_run(&envs[i]);
+	}
+
+	if (envs[curenv_id].env_status == ENV_RUNNING)
+		env_run(&envs[curenv_id]);
 
 	// For debugging and testing purposes, if there are no
 	// runnable environments other than the idle environments,
@@ -46,8 +60,8 @@ sched_yield(void)
 	}
 
 	// Run this CPU's idle environment when nothing else is runnable.
-	idle = &envs[cpunum()];
+	idle = &envs[thiscpu_id];
 	if (!(idle->env_status == ENV_RUNNABLE || idle->env_status == ENV_RUNNING))
-		panic("CPU %d: No idle environment!", cpunum());
+		panic("CPU %d: No idle environment!", thiscpu_id);
 	env_run(idle);
 }
