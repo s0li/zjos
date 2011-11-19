@@ -332,8 +332,59 @@ sys_page_unmap(envid_t envid, void *va)
 static int
 sys_ipc_try_send(envid_t envid, uint32_t value, void *srcva, unsigned perm)
 {
-	// LAB 4: Your code here.
-	panic("sys_ipc_try_send not implemented");
+	int errno;
+	struct Env* target_env;
+	struct Page* sentpage;
+	pte_t* sentpage_pte;
+
+	errno = envid2env(envid, &target_env, 0);	// checkperm = 0
+	if (errno < 0)
+		return errno;
+
+	if (target_env->env_ipc_recving == 0)
+		return -E_IPC_NOT_RECV;
+	assert(target_env->env_status == ENV_NOT_RUNNABLE);
+
+	if (! ((uintptr_t)srcva < UTOP) ) {
+		perm = 0;
+		goto set_value_ontarget;
+	}
+
+	// from now on, srcva < UTOP is true
+	
+	// first check if target env wants to recieve a page, if not then don't
+	// check anything related to permissions/mappings
+	if (! ((uintptr_t)target_env->env_ipc_dstva < UTOP) ) {
+		perm = 0;
+		goto set_value_ontarget;
+	}
+	
+	if (ROUNDDOWN(srcva, PGSIZE) != srcva)
+		return -E_INVAL;
+	// not checking for PTE_P, see sys_page_alloc for why
+	if ((perm & PTE_U) == 0 || (~PTE_SYSCALL & perm) != 0)
+		return -E_INVAL;
+
+	sentpage = page_lookup(curenv->env_pgdir, srcva, &sentpage_pte);
+	if (sentpage == NULL)
+		return -E_INVAL;
+	if ((perm & PTE_W) != 0 && (*sentpage_pte & PTE_W) == 0)
+		return -E_INVAL;
+
+	errno = page_insert(target_env->env_pgdir, sentpage,
+			    target_env->env_ipc_dstva, perm);
+	if (errno < 0)
+		return errno;
+
+set_value_ontarget:	
+	target_env->env_ipc_recving	= 0;
+	target_env->env_ipc_from	= curenv->env_id;
+	target_env->env_ipc_value	= value;
+	target_env->env_ipc_perm	= perm;
+
+	target_env->env_status		= ENV_RUNNABLE;
+
+	return errno;
 }
 
 // Block until a value is ready.  Record that you want to receive
@@ -350,8 +401,24 @@ sys_ipc_try_send(envid_t envid, uint32_t value, void *srcva, unsigned perm)
 static int
 sys_ipc_recv(void *dstva)
 {
-	// LAB 4: Your code here.
-	panic("sys_ipc_recv not implemented");
+	if ((uintptr_t)dstva < UTOP && ROUNDDOWN(dstva, PGSIZE) != dstva)
+		return -E_INVAL;
+	
+	curenv->env_ipc_recving		= 1;
+	curenv->env_ipc_dstva		= dstva;
+	curenv->env_status		= ENV_NOT_RUNNABLE;
+	curenv->env_tf.tf_regs.reg_eax	= 0;	// setting return value from
+						// this system call
+
+	sched_yield();
+
+	// We never get here, and here's why: when we yield we wait for someone
+	// to send us some value through IPC mechanism. That env also changes
+	// our status to RUNNABLE. Then, when the scheduler chooses to run us it
+	// calls env_run with our trapframe which contains the eip of user-space
+	// program, not eip of <THIS> function.
+	panic("sys_ipc_recv - how tf did we get here");
+	
 	return 0;
 }
 
@@ -405,16 +472,18 @@ syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
 	case SYS_env_set_pgfault_upcall:
 		errno = sys_env_set_pgfault_upcall((envid_t)a1, (void*)a2);
 		break;
-	/* case SYS_ipc_try_send: */
-	/* 	errno = sys_ipc_try_send((envid_t)a1, (uint32_t)a2, (void*)a3, */
-	/* 				 (unsigned int)a4); */
-	/* 	break; */
-	/* case SYS_ipc_recv: */
-	/* 	errno = sys_ipc_recv((void*)a1); */
-	/* 	break; */
+	case SYS_ipc_try_send:
+		errno = sys_ipc_try_send((envid_t)a1, (uint32_t)a2, (void*)a3,
+					 (unsigned int)a4);
+		break;
+	case SYS_ipc_recv:
+		errno = sys_ipc_recv((void*)a1);
+		break;
 	/* case SYS_env_set_trapframe: */
 	/* 	errno = sys_env_set_trapframe((envid_t)a1, (struct Trapframe*)a2); */
 	/* 	break; */
+
+	// TODO - this syscall is redundant at the moment (users can read envs array)
 	case SYS_get_cpuid:
 		errno = sys_get_cpuid();
 		break;
