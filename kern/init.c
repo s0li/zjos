@@ -31,16 +31,15 @@ i386_init(void)
 	// Initialize the console.
 	// Can't call cprintf until after we do this!
 	cons_init();
-
-	cprintf("6828 decimal is %o octal!\n", 6828);
-
+	
 	// Lab 2 memory management initialization functions
 	mem_init();
 
 	// Lab 3 user environment initialization functions
 	env_init();
+	
 	trap_init();
-
+	
 	// Lab 4 multiprocessor initialization functions
 	mp_init();
 	lapic_init();
@@ -53,7 +52,8 @@ i386_init(void)
 	lock_kernel();
 
 	// Starting non-boot CPUs
-	boot_aps();
+	if (ncpu > 1)
+		boot_aps();
 
 	// Should always have idle processes at first.
 	int i;
@@ -130,9 +130,6 @@ mp_main(void)
 	// Your code here:
 	lock_kernel();
 	sched_yield();
-
-	// Remove this after you finish Exercise 4
-	for (;;);
 }
 
 /*

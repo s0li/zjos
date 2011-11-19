@@ -346,6 +346,8 @@ void
 page_fault_handler(struct Trapframe *tf)
 {
 	uint32_t fault_va;
+	struct UTrapframe* utf;
+	void* user_excstack = (void*)(UXSTACKTOP - PGSIZE);
 
 	// Read processor's CR2 register to find the faulting address
 	fault_va = rcr2();
@@ -386,13 +388,34 @@ page_fault_handler(struct Trapframe *tf)
 	//   user_mem_assert() and env_run() are useful here.
 	//   To change what the user environment runs, modify 'curenv->env_tf'
 	//   (the 'tf' variable points at 'curenv->env_tf').
+	if (curenv->env_pgfault_upcall == NULL) {
+		// Destroy the environment that caused the fault.
+		cprintf("[%08x] user fault va %08x ip %08x\n",
+			curenv->env_id, fault_va, tf->tf_eip);
+		print_trapframe(tf);
+		env_destroy(curenv);
+		
+		return;
+	}
 
-	// LAB 4: Your code here.
+	if (tf->tf_esp >= (uintptr_t)user_excstack &&
+	    tf->tf_esp <= (UXSTACKTOP - 1))
+		utf = (void*)(tf->tf_esp - sizeof(struct UTrapframe) - 4);
+	else
+		utf = (void*)(UXSTACKTOP - sizeof(struct UTrapframe));
 
-	// Destroy the environment that caused the fault.
-	cprintf("[%08x] user fault va %08x ip %08x\n",
-		curenv->env_id, fault_va, tf->tf_eip);
-	print_trapframe(tf);
-	env_destroy(curenv);
+	user_mem_assert(curenv, utf, sizeof(struct UTrapframe), PTE_W);
+
+	utf->utf_fault_va = fault_va;
+	utf->utf_err = tf->tf_err;
+	utf->utf_regs = tf->tf_regs;
+	utf->utf_eip = tf->tf_eip;
+	utf->utf_eflags = tf->tf_eflags;
+	utf->utf_esp = tf->tf_esp;
+
+	tf->tf_esp = (uintptr_t)(&(utf->utf_fault_va));
+	tf->tf_eip = (uintptr_t)curenv->env_pgfault_upcall;
+
+	env_run(curenv);
 }
 

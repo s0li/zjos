@@ -4,7 +4,6 @@
 #include <kern/pmap.h>
 #include <kern/monitor.h>
 
-
 // Choose a user environment to run and run it.
 void
 sched_yield(void)
@@ -30,19 +29,26 @@ sched_yield(void)
 	int thiscpu_id = cpunum();
 	int curenv_id = (curenv == NULL) ? thiscpu_id : ENVX(curenv->env_id);
 
-	// LAB 4: Your code here.
+//	DEBUG_print_allenv();
+
+//	cprintf("curenvid = %d\n", curenv_id);
+
 	for (i = (curenv_id + 1) % NENV; i != curenv_id; i = (i + 1) % NENV) {
 		if (envs[i].env_status == ENV_TYPE_IDLE ||
 		    envs[i].env_status == ENV_RUNNING ||
 		    i == thiscpu_id)
 			continue;
 
-		if (envs[i].env_status == ENV_RUNNABLE)
+		if (envs[i].env_status == ENV_RUNNABLE) {
+//			cprintf("Xgoing to run %d\n", i);
 			env_run(&envs[i]);
+		}
 	}
 
-	if (envs[curenv_id].env_status == ENV_RUNNING)
+	if (envs[curenv_id].env_status == ENV_RUNNING) {
+//		cprintf("XXgoing to run %d\n", i);
 		env_run(&envs[curenv_id]);
+	}
 
 	// For debugging and testing purposes, if there are no
 	// runnable environments other than the idle environments,
@@ -63,5 +69,7 @@ sched_yield(void)
 	idle = &envs[thiscpu_id];
 	if (!(idle->env_status == ENV_RUNNABLE || idle->env_status == ENV_RUNNING))
 		panic("CPU %d: No idle environment!", thiscpu_id);
+
+//	cprintf("XXXgoing to run %d\n", thiscpu_id);
 	env_run(idle);
 }

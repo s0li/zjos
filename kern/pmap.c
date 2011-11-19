@@ -152,7 +152,12 @@ mem_init(void)
 
 	//////////////////////////////////////////////////////////////////////
 	// Make 'envs' point to an array of size 'NENV' of 'struct Env'.
-	envs = (struct Env*)boot_alloc(sizeof(struct Page) * NENV);
+	cprintf("boot alloc before envs = %x\n", boot_alloc(0));
+	envs = (struct Env*)boot_alloc(sizeof(struct Env) * NENV);
+	cprintf("boot alloc after envs = %x\n", boot_alloc(0));
+
+	cprintf("size of all envs struct = %x\n", sizeof(struct Env) * NENV);
+	cprintf("envs is between %x and %x\n", envs, envs + NENV);
 
 	//////////////////////////////////////////////////////////////////////
 	// Now that we've allocated the initial kernel data structures, we set
@@ -301,7 +306,7 @@ page_init(void)
 	// LAB 4:
 	// Change your code to mark the physical page at MPENTRY_PADDR
 	// as in use
-
+	
 	/* Changed in the first loop */
 
 	// The example code here marks all physical pages as free.
@@ -316,17 +321,20 @@ page_init(void)
 	//     is free.
 	for (i = 1; i < npages_basemem; ++i) {
 		if (i == PGNUM(MPENTRY_PADDR)) {
+//			cprintf("%x - %x not free\n", KADDR(i * PGSIZE), KADDR(i * PGSIZE) + PGSIZE);
 			pages[i].pp_ref = 1;
 			continue;
 		}
-		
+
 		pages[i].pp_ref = 0;
 		pages[i].pp_link = page_free_list;
 		page_free_list = &pages[i];
 	}
+//	cprintf("%x - %x free\n", KADDR(PGSIZE), KADDR(npages_basemem * PGSIZE));
 	
 	//  3) Then comes the IO hole [IOPHYSMEM, EXTPHYSMEM), which must
 	//     never be allocated.
+//	cprintf("%x - %x not free\n", KADDR(IOPHYSMEM), KADDR(EXTPHYSMEM));
 	for (i = IOPHYSMEM / PGSIZE; i < EXTPHYSMEM / PGSIZE; ++i) {
 		pages[i].pp_ref = 1;
 	}
@@ -336,10 +344,15 @@ page_init(void)
 	//     in physical memory?  Which pages are already in use for
 	//     page tables and other data structures?
 	//
+//	cprintf("%x - %x not free\n", KADDR(EXTPHYSMEM), KADDR(allocated_addr));
 	for (i = EXTPHYSMEM / PGSIZE; i < allocated_addr / PGSIZE; ++i) {
 		pages[i].pp_ref = 1;
 	}
-	
+
+	/* cprintf("%d\n", npages); */
+	/* cprintf("%x\n", KADDR(allocated_addr)); */
+	/* cprintf("%x\n", npages * PGSIZE); */
+	/* cprintf("%x - %x free\n", KADDR(allocated_addr), KADDR(npages * PGSIZE)); */
 	for (i = allocated_addr / PGSIZE; i < npages; ++i) {
 		pages[i].pp_ref = 0;
 		pages[i].pp_link = page_free_list;
@@ -360,9 +373,6 @@ struct Page *
 page_alloc(int alloc_flags)
 {
 	struct Page* respage;
-	char *paddr;
-	char* pghigh;
-	char* pglow;
 	
 	if (page_free_list == NULL)
 		return NULL;
@@ -370,6 +380,7 @@ page_alloc(int alloc_flags)
 	respage = page_free_list;
 	page_free_list = page_free_list->pp_link;
 
+	memset(respage, 0, sizeof(struct Page));
 	if (alloc_flags & ALLOC_ZERO)
 		memset(page2kva(respage), 0, PGSIZE);
 	

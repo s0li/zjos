@@ -35,4 +35,6 @@ void	env_pop_tf(struct Trapframe *tf) __attribute__((noreturn));
 			   type);					\
 	} while (0)
 
+void DEBUG_print_allenv(void);
+
 #endif // !JOS_KERN_ENV_H

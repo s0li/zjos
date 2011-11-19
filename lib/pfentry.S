@@ -64,19 +64,47 @@ _pgfault_upcall:
 	// may find that you have to rearrange your code in non-obvious
 	// ways as registers become unavailable as scratch space.
 	//
-	// LAB 4: Your code here.
+
+	// 	we are on the exception stack
+	
+// 48 trap-time esp
+// 44 trap-time eflags
+// 40 trap-time eip
+// 36 trap-time eax       start of struct PushRegs
+// 32 trap-time ecx
+// 28 trap-time edx
+// 24 trap-time ebx
+// 20 trap-time esp
+// 16 trap-time ebp
+// 12 trap-time esi
+// 8  trap-time edi       end of struct PushRegs
+// 4  tf_err (error code)
+// 0  fault_va            <-- %esp when handler is run 
+
+	movl 48(%esp)	, %eax		# mov trap time esp into eax
+	movl 40(%esp)	, %ebx		# mov trap time eip into ebx
+	subl $4		, %eax		# adjust trap time esp appropriately
+	movl %ebx	, (%eax)	# mov trap time eip into trap time esp
+	movl %eax	, 48(%esp)	# write trap time esp back
 
 	// Restore the trap-time registers.  After you do this, you
 	// can no longer modify any general-purpose registers.
-	// LAB 4: Your code here.
+	movl 36(%esp)	, %eax
+	movl 32(%esp)	, %ecx
+	movl 28(%esp)	, %edx
+	movl 24(%esp)	, %ebx
+	movl 16(%esp)	, %ebp
+	movl 12(%esp)	, %esi
+	movl 8(%esp)	, %edi
 
 	// Restore eflags from the stack.  After you do this, you can
 	// no longer use arithmetic operations or anything else that
 	// modifies eflags.
-	// LAB 4: Your code here.
-
+	pushl 44(%esp)	# push trap-time eflags onto exception stack
+	popfl
+	
 	// Switch back to the adjusted trap-time stack.
-	// LAB 4: Your code here.
+	movl 48(%esp), %esp
 
 	// Return to re-execute the instruction that faulted.
-	// LAB 4: Your code here.
+	ret
