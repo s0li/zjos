@@ -152,12 +152,7 @@ mem_init(void)
 
 	//////////////////////////////////////////////////////////////////////
 	// Make 'envs' point to an array of size 'NENV' of 'struct Env'.
-	cprintf("boot alloc before envs = %x\n", boot_alloc(0));
 	envs = (struct Env*)boot_alloc(sizeof(struct Env) * NENV);
-	cprintf("boot alloc after envs = %x\n", boot_alloc(0));
-
-	cprintf("size of all envs struct = %x\n", sizeof(struct Env) * NENV);
-	cprintf("envs is between %x and %x\n", envs, envs + NENV);
 
 	//////////////////////////////////////////////////////////////////////
 	// Now that we've allocated the initial kernel data structures, we set
