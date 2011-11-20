@@ -59,9 +59,17 @@ alloc_block(void)
 	// The bitmap consists of one or more blocks.  A single bitmap block
 	// contains the in-use bits for BLKBITSIZE blocks.  There are
 	// super->s_nblocks blocks in the disk altogether.
+	uint32_t curblock;
 
-	// LAB 5: Your code here.
-	panic("alloc_block not implemented");
+	for (curblock = 0; curblock < super->s_nblocks; ++curblock) {
+		if (block_is_free(curblock)) {
+			bitmap[curblock/32] &= ~(1<<(curblock%32));
+			flush_block(&bitmap[curblock/32]);
+
+			return curblock;
+		}
+	}
+
 	return -E_NO_DISK;
 }
 
@@ -131,8 +139,37 @@ fs_init(void)
 static int
 file_block_walk(struct File *f, uint32_t filebno, uint32_t **ppdiskbno, bool alloc)
 {
-	// LAB 5: Your code here.
-	panic("file_block_walk not implemented");
+	uint32_t new_indirect_block;
+	uint32_t* pindblock;
+	
+	if (filebno >= NDIRECT + NINDIRECT)
+		return -E_INVAL;
+	assert(f);
+
+	if (filebno < NDIRECT) {
+		*ppdiskbno = &f->f_direct[filebno];
+		return 0;
+	}
+
+	if (!f->f_indirect && !alloc)
+		return -E_NOT_FOUND;
+
+	if (!f->f_indirect) {
+		if ((new_indirect_block = alloc_block()) < 0)
+			return new_indirect_block;
+
+		f->f_indirect = new_indirect_block;
+		pindblock = diskaddr(f->f_indirect);
+		memset(pindblock, 0, BLKSIZE);
+	}
+	else
+		pindblock = diskaddr(f->f_indirect);
+
+	// now we have the indirect block
+	filebno -= NDIRECT; /* offset in indirect */
+	*ppdiskbno = &pindblock[filebno];
+	
+	return 0;
 }
 
 // Set *blk to the address in memory where the filebno'th
@@ -147,8 +184,29 @@ file_block_walk(struct File *f, uint32_t filebno, uint32_t **ppdiskbno, bool all
 int
 file_get_block(struct File *f, uint32_t filebno, char **blk)
 {
-	// LAB 5: Your code here.
-	panic("file_get_block not implemented");
+	int ret;
+	uint32_t* slot;
+
+	assert(f);
+	if (filebno > f->f_size / BLKSIZE)
+		return -E_INVAL;
+
+	if ((ret = file_block_walk(f, filebno, &slot, 1)) < 0)
+		return ret;
+
+	if (*slot) {
+		*blk = diskaddr(*slot);
+		return 0;
+	}
+
+	if ((ret = alloc_block()) < 0)
+		return ret;
+
+	*slot = ret;
+	flush_block(slot);
+
+	*blk = diskaddr(*slot);
+	return 0;
 }
 
 // Try to find a file named "name" in dir.  If so, set *file to it.
