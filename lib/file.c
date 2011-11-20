@@ -28,11 +28,11 @@ fsipc(unsigned type, void *dstva)
 	return ipc_recv(NULL, dstva, NULL);
 }
 
-static int devfile_flush(struct Fd *fd);
-static ssize_t devfile_read(struct Fd *fd, void *buf, size_t n);
-static ssize_t devfile_write(struct Fd *fd, const void *buf, size_t n);
-static int devfile_stat(struct Fd *fd, struct Stat *stat);
-static int devfile_trunc(struct Fd *fd, off_t newsize);
+static int	devfile_flush(struct Fd *fd);
+static ssize_t	devfile_read(struct Fd *fd, void *buf, size_t n);
+static ssize_t	devfile_write(struct Fd *fd, const void *buf, size_t n);
+static int	devfile_stat(struct Fd *fd, struct Stat *stat);
+static int	devfile_trunc(struct Fd *fd, off_t newsize);
 
 struct Dev devfile =
 {
@@ -67,9 +67,24 @@ open(const char *path, int mode)
 	// Return the file descriptor index.
 	// If any step after fd_alloc fails, use fd_close to free the
 	// file descriptor.
+	int errno;
+	struct Fd* freefd;
 
-	// LAB 5: Your code here.
-	panic("open not implemented");
+	errno = fd_alloc(&freefd);
+	if (errno < 0)
+		return errno;
+
+	memmove(fsipcbuf.open.req_path, path, MAXPATHLEN-1);
+	fsipcbuf.open.req_path[MAXPATHLEN-1] = '\0';
+	fsipcbuf.open.req_omode = mode;
+	
+	errno = fsipc(FSREQ_OPEN, freefd);
+	if (errno < 0) {
+		fd_close(freefd, 0);
+		return errno;
+	}
+
+	return fd2num(freefd);
 }
 
 // Flush the file descriptor.  After this the fileid is invalid.
@@ -99,8 +114,19 @@ devfile_read(struct Fd *fd, void *buf, size_t n)
 	// filling fsipcbuf.read with the request arguments.  The
 	// bytes read will be written back to fsipcbuf by the file
 	// system server.
-	// LAB 5: Your code here
-	panic("devfile_read not implemented");
+	int errno;
+
+	fsipcbuf.read.req_fileid = fd->fd_file.id;
+	fsipcbuf.read.req_n = n;
+
+	errno = fsipc(FSREQ_READ, NULL);
+	if (errno < 0) {
+		cprintf("fsipc(READ) returned %d\n", errno);
+		return errno;
+	}
+
+	memmove(buf, fsipcbuf.readRet.ret_buf, errno);
+	return errno;
 }
 
 // Write at most 'n' bytes from 'buf' to 'fd' at the current seek position.
@@ -114,9 +140,17 @@ devfile_write(struct Fd *fd, const void *buf, size_t n)
 	// Make an FSREQ_WRITE request to the file system server.  Be
 	// careful: fsipcbuf.write.req_buf is only so large, but
 	// remember that write is always allowed to write *fewer*
-	// bytes than requested.
-	// LAB 5: Your code here
-	panic("devfile_write not implemented");
+	// bytes than requested.	
+	size_t bytes2write;
+	
+	bytes2write = (n > sizeof(fsipcbuf.write.req_buf)) ?
+		       sizeof(fsipcbuf.write.req_buf) : n;
+
+	fsipcbuf.write.req_fileid = fd->fd_file.id;
+	fsipcbuf.write.req_n = bytes2write;
+	memmove(fsipcbuf.write.req_buf, buf, bytes2write);
+	
+	return fsipc(FSREQ_WRITE, NULL);
 }
 
 static int

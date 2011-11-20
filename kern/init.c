@@ -33,16 +33,15 @@ i386_init(void)
 	// Initialize the console.
 	// Can't call cprintf until after we do this!
 	cons_init();
-
-	cprintf("6828 decimal is %o octal!\n", 6828);
-
+	
 	// Lab 2 memory management initialization functions
 	mem_init();
 
 	// Lab 3 user environment initialization functions
 	env_init();
+	
 	trap_init();
-
+	
 	// Lab 4 multiprocessor initialization functions
 	mp_init();
 	lapic_init();
@@ -56,9 +55,11 @@ i386_init(void)
 
 	// Acquire the big kernel lock before waking up APs
 	// Your code here:
+	lock_kernel();
 
 	// Starting non-boot CPUs
-	boot_aps();
+	if (ncpu > 1)
+		boot_aps();
 
 	// Should always have idle processes at first.
 	int i;
@@ -67,6 +68,12 @@ i386_init(void)
 
 	// Start fs.
 	ENV_CREATE(fs_fs, ENV_TYPE_FS);
+	
+	// for testing purposes (lab 4)
+	/* ENV_CREATE(user_yield, ENV_TYPE_USER); */
+	/* ENV_CREATE(user_yield, ENV_TYPE_USER); */
+	/* ENV_CREATE(user_yield, ENV_TYPE_USER); */
+	/* ENV_CREATE(user_yield, ENV_TYPE_USER); */
 
 #if !defined(TEST_NO_NS)
 	// Start ns.
@@ -78,9 +85,17 @@ i386_init(void)
 	ENV_CREATE(TEST, ENV_TYPE_USER);
 #else
 	// Touch all you want.
+
 	// ENV_CREATE(net_testoutput, ENV_TYPE_USER);
 	// ENV_CREATE(user_echosrv, ENV_TYPE_USER);
 	// ENV_CREATE(user_httpd, ENV_TYPE_USER);
+
+	// ENV_CREATE(user_writemotd, ENV_TYPE_USER);
+	// ENV_CREATE(user_testfile, ENV_TYPE_USER);
+	// ENV_CREATE(user_icode, ENV_TYPE_USER);
+
+//	ENV_CREATE(user_primes, ENV_TYPE_USER);
+
 #endif // TEST*
 
 	// Schedule and run the first user environment!
@@ -137,9 +152,8 @@ mp_main(void)
 	// only one CPU can enter the scheduler at a time!
 	//
 	// Your code here:
-
-	// Remove this after you finish Exercise 4
-	for (;;);
+	lock_kernel();
+	sched_yield();
 }
 
 /*

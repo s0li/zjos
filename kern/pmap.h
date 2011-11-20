@@ -54,13 +54,13 @@ enum {
 void	mem_init(void);
 void	boot_map_region(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm);
 
-void	page_init(void);
-struct Page *page_alloc(int alloc_flags);
-void	page_free(struct Page *pp);
-int	page_insert(pde_t *pgdir, struct Page *pp, void *va, int perm);
-void	page_remove(pde_t *pgdir, void *va);
-struct Page *page_lookup(pde_t *pgdir, void *va, pte_t **pte_store);
-void	page_decref(struct Page *pp);
+void		page_init(void);
+struct Page *	page_alloc(int alloc_flags);
+void		page_free(struct Page *pp);
+int		page_insert(pde_t *pgdir, struct Page *pp, void *va, int perm);
+void		page_remove(pde_t *pgdir, void *va);
+struct Page *	page_lookup(pde_t *pgdir, void *va, pte_t **pte_store);
+void		page_decref(struct Page *pp);
 
 void	tlb_invalidate(pde_t *pgdir, void *va);
 
