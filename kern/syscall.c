@@ -131,10 +131,23 @@ sys_env_set_status(envid_t envid, int status)
 static int
 sys_env_set_trapframe(envid_t envid, struct Trapframe *tf)
 {
-	// LAB 5: Your code here.
 	// Remember to check whether the user has supplied us with a good
 	// address!
-	panic("sys_env_set_trapframe not implemented");
+	int errno;
+	struct Env* target_env;
+
+	errno = envid2env(envid, &target_env, 1);
+	if (errno < 0)
+		return errno;
+
+	user_mem_assert(curenv, (void*)tf, sizeof(uintptr_t), PTE_U | PTE_P);
+
+	memmove(&target_env->env_tf, tf, sizeof(struct Trapframe));
+	
+	target_env->env_tf.tf_eflags |= FL_IF;	// enable interrupts in user mode
+	target_env->env_tf.tf_cs |= 3;		// CPL = 3
+
+	return 0;
 }
 
 // Set the page fault upcall for 'envid' by modifying the corresponding struct
@@ -491,11 +504,11 @@ syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
 	case SYS_ipc_recv:
 		errno = sys_ipc_recv((void*)a1);
 		break;
-	/* case SYS_env_set_trapframe: */
-	/* 	errno = sys_env_set_trapframe((envid_t)a1, (struct Trapframe*)a2); */
-	/* 	break; */
+	case SYS_env_set_trapframe:
+		errno = sys_env_set_trapframe((envid_t)a1, (struct Trapframe*)a2);
+		break;
 
-	// TODO - this syscall is redundant at the moment (users can read envs array)
+	//TODO - this syscall is redundant at the moment (users can read envs array)
 	case SYS_get_cpuid:
 		errno = sys_get_cpuid();
 		break;
