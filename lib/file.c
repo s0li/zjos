@@ -67,9 +67,24 @@ open(const char *path, int mode)
 	// Return the file descriptor index.
 	// If any step after fd_alloc fails, use fd_close to free the
 	// file descriptor.
+	int errno;
+	struct Fd* freefd;
 
-	// LAB 5: Your code here.
-	panic("open not implemented");
+	errno = fd_alloc(&freefd);
+	if (errno < 0)
+		return errno;
+
+	memmove(fsipcbuf.open.req_path, path, MAXPATHLEN-1);
+	fsipcbuf.open.req_path[MAXPATHLEN-1] = '\0';
+	fsipcbuf.open.req_omode = mode;
+	
+	errno = fsipc(FSREQ_OPEN, freefd);
+	if (errno < 0) {
+		fd_close(freefd, 0);
+		return errno;
+	}
+
+	return fd2num(freefd);
 }
 
 // Flush the file descriptor.  After this the fileid is invalid.
