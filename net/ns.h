@@ -1,9 +1,9 @@
 #include <inc/ns.h>
 #include <inc/lib.h>
 
-#define IP "10.0.2.15"
-#define MASK "255.255.255.0"
-#define DEFAULT "10.0.2.2"
+#define IP	"10.0.2.15"
+#define MASK	"255.255.255.0"
+#define DEFAULT "10.0.2.2"	// default IP address for virtual router
 
 #define TIMER_INTERVAL 250
 
