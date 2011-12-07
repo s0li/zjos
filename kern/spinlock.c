@@ -9,6 +9,8 @@
 #include <kern/spinlock.h>
 #include <kern/kdebug.h>
 
+#include <kern/lapic.h>
+
 // The big kernel lock
 struct spinlock kernel_lock = {
 #ifdef DEBUG_SPINLOCK

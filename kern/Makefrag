@@ -38,6 +38,9 @@ KERN_SRCFILES +=	kern/mpentry.S \
 			kern/lapic.c \
 			kern/spinlock.c
 
+# Source files for SMP project
+KERN_SRCFILES +=	kern/ioapic.c
+
 # Only build files if they exist.
 KERN_SRCFILES := $(wildcard $(KERN_SRCFILES))
 

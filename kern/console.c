@@ -5,9 +5,11 @@
 #include <inc/kbdreg.h>
 #include <inc/string.h>
 #include <inc/assert.h>
+#include <inc/trap.h>
 
 #include <kern/console.h>
 #include <kern/picirq.h>
+#include <kern/ioapic.h>
 
 static void cons_intr(int (*proc)(void));
 static void cons_putc(int c);
@@ -372,7 +374,10 @@ kbd_init(void)
 {
 	// Drain the kbd buffer so that Bochs generates interrupts.
 	kbd_intr();
-	irq_setmask_8259A(irq_mask_8259A & ~(1<<1));
+	
+	// TODO - pic/ioapic conflict with keyboard?
+//	irq_setmask_8259A(irq_mask_8259A & ~(1<<1));
+	// currently the keyboard irq is enabled in init.c
 }
 
 

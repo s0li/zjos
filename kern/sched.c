@@ -4,6 +4,8 @@
 #include <kern/pmap.h>
 #include <kern/monitor.h>
 
+#include <kern/lapic.h>
+
 // Choose a user environment to run and run it.
 void
 sched_yield(void)

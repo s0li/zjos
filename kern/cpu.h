@@ -2,6 +2,8 @@
 #ifndef JOS_INC_CPU_H
 #define JOS_INC_CPU_H
 
+#include <kern/lapic.h>
+
 #include <inc/types.h>
 #include <inc/memlayout.h>
 #include <inc/mmu.h>

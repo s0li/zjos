@@ -15,6 +15,8 @@
 #include <kern/cpu.h>
 #include <kern/spinlock.h>
 
+#include <kern/lapic.h>
+
 struct Env *envs = NULL;		// All environments
 static struct Env *env_free_list;	// Free environment list
 					// (linked by Env->env_link)
@@ -406,7 +408,6 @@ void
 env_create(uint8_t *binary, size_t size, enum EnvType type)
 {
 	// If this is the file server (type == ENV_TYPE_FS) give it I/O privileges.
-	// LAB 5: Your code here.
 	struct Env* newenv;
 	
 	if (env_alloc(&newenv, 0) < 0)

@@ -15,6 +15,8 @@
 #include <kern/cpu.h>
 #include <kern/spinlock.h>
 
+#include <kern/ioapic.h>
+
 static void boot_aps(void);
 
 
@@ -43,12 +45,16 @@ i386_init(void)
 	// Lab 4 multiprocessor initialization functions
 	mp_init();
 	lapic_init();
+	ioapicinit();
+
+	// TODO - put this where it belongs - this was previously done at cons_init
+	// enable keyboard interrupts on CPU 0
+	ioapicenable(IRQ_KBD, 0);
 
 	// Lab 4 multitasking initialization functions
 	pic_init();
 
 	// Acquire the big kernel lock before waking up APs
-	// Your code here:
 	lock_kernel();
 
 	// Starting non-boot CPUs
@@ -134,8 +140,6 @@ mp_main(void)
 	// Now that we have finished some basic setup, call sched_yield()
 	// to start running processes on this CPU.  But make sure that
 	// only one CPU can enter the scheduler at a time!
-	//
-	// Your code here:
 	lock_kernel();
 	sched_yield();
 }
