@@ -251,9 +251,11 @@ trap_dispatch(struct Trapframe *tf)
 	case T_PGFLT:
 		page_fault_handler(tf);
 		return;
+		
 	case T_BRKPT:
 		monitor(tf);
 		return;
+		
 	case T_SYSCALL:
 		tf->tf_regs.reg_eax = syscall(tf->tf_regs.reg_eax,
 					      tf->tf_regs.reg_edx,
@@ -262,6 +264,11 @@ trap_dispatch(struct Trapframe *tf)
 					      tf->tf_regs.reg_edi,
 					      tf->tf_regs.reg_esi);
 		return;
+		
+	case IRQ_OFFSET + IRQ_KBD:
+		kbd_intr();
+		lapic_eoi();
+		return;
 
 	// Handle clock interrupts. Don't forget to acknowledge the
         // interrupt using lapic_eoi() before calling the scheduler!
@@ -269,7 +276,6 @@ trap_dispatch(struct Trapframe *tf)
 		lapic_eoi();
 		sched_yield();
 		return;
-
 	}
 
 	// Handle spurious interrupts
