@@ -16,6 +16,7 @@
 #include <kern/spinlock.h>
 
 #include <kern/ioapic.h>
+#include <kern/time.h>
 
 static void boot_aps(void);
 
@@ -53,6 +54,7 @@ i386_init(void)
 
 	// Lab 4 multitasking initialization functions
 	pic_init();
+	time_init();
 
 	// Acquire the big kernel lock before waking up APs
 	lock_kernel();

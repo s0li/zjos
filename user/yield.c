@@ -11,7 +11,7 @@ umain(int argc, char **argv)
 	for (i = 0; i < 5; i++) {
 		sys_yield();
 		cprintf("Back in environment %08x, iteration %d. CPU = %d\n",
-			thisenv->env_id, i, sys_get_cpuid());
+			thisenv->env_id, i, thisenv->env_cpunum);
 	}
 	cprintf("All done in environment %08x.\n", thisenv->env_id);
 }

@@ -39,7 +39,8 @@ KERN_SRCFILES +=	kern/mpentry.S \
 			kern/spinlock.c
 
 # Source files for SMP project
-KERN_SRCFILES +=	kern/ioapic.c
+KERN_SRCFILES +=	kern/ioapic.c \
+	      		kern/time.c
 
 # Only build files if they exist.
 KERN_SRCFILES := $(wildcard $(KERN_SRCFILES))
@@ -83,6 +84,9 @@ KERN_BINFILES +=	user/testfile \
 			user/writemotd \
 			user/icode \
 			fs/fs
+
+# Binary files for SMP project
+KERN_BINFILES +=	user/ioapictest
 
 KERN_OBJFILES := $(patsubst %.c, $(OBJDIR)/%.o, $(KERN_SRCFILES))
 KERN_OBJFILES := $(patsubst %.S, $(OBJDIR)/%.o, $(KERN_OBJFILES))

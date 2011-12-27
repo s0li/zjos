@@ -10,6 +10,7 @@
 #include <kern/console.h>
 #include <kern/picirq.h>
 #include <kern/ioapic.h>
+#include <kern/lapic.h>
 
 static void cons_intr(int (*proc)(void));
 static void cons_putc(int c);

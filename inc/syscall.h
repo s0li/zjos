@@ -17,7 +17,8 @@ enum {
 	SYS_yield,
 	SYS_ipc_try_send,
 	SYS_ipc_recv,
-	SYS_get_cpuid,
+	SYS_interrupt_redirect,
+	SYS_time_msec,
 	NSYSCALLS
 };
 

@@ -118,7 +118,14 @@ sys_ipc_recv(void *dstva)
 }
 
 int
-sys_get_cpuid(void)
+sys_intr_redirect(uint32_t vector, uint32_t cpunum)
 {
-	return syscall(SYS_get_cpuid, 0, 0, 0, 0, 0, 0);
+	return syscall(SYS_interrupt_redirect, 0, vector, cpunum, 0, 0, 0);
 }
+
+int
+sys_time_msec(void)
+{
+	return syscall(SYS_time_msec, 0, 0, 0, 0, 0, 0);
+}
+

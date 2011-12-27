@@ -15,6 +15,10 @@
 #include <kern/spinlock.h>
 
 #include <kern/lapic.h>
+#include <kern/time.h>
+
+#include <kern/cpu.h>
+#include <kern/ioapic.h>
 
 static struct Taskstate ts;
 
@@ -266,6 +270,7 @@ trap_dispatch(struct Trapframe *tf)
 		return;
 		
 	case IRQ_OFFSET + IRQ_KBD:
+		cprintf(" >> kbd interrupt on cpu %d\n", cpunum());
 		kbd_intr();
 		lapic_eoi();
 		return;
@@ -273,6 +278,7 @@ trap_dispatch(struct Trapframe *tf)
 	// Handle clock interrupts. Don't forget to acknowledge the
         // interrupt using lapic_eoi() before calling the scheduler!
 	case IRQ_OFFSET + IRQ_TIMER:
+		time_tick();
 		lapic_eoi();
 		sched_yield();
 		return;
@@ -286,10 +292,6 @@ trap_dispatch(struct Trapframe *tf)
 		print_trapframe(tf);
 		return;
 	}
-
-	// Handle clock interrupts. Don't forget to acknowledge the
-	// interrupt using lapic_eoi() before calling the scheduler!
-	// LAB 4: Your code here.
 
 	// Unexpected trap: The user process or the kernel has a bug.
 	print_trapframe(tf);

@@ -13,6 +13,8 @@
 #include <kern/sched.h>
 
 #include <kern/lapic.h>
+#include <kern/ioapic.h>
+#include <kern/time.h>
 
 // Print a string to the system console.
 // The string is exactly 'len' characters long.
@@ -449,12 +451,35 @@ sys_ipc_recv(void *dstva)
 	return 0;
 }
 
+// Redirect interrupt vector 'vector' to CPU with id 'cpunum'
+// return -1:   if the user isn't allowed to redirect interrupt vector cpunum is
+// 		invalid (exceeds amount of CPUs or smaller than 0.)
+//
+// return 0: 	on sucessfully redirecting interrupt vector to cpunum.
 static int
-sys_get_cpuid(void)
+sys_intr_redirect(uint32_t vector, uint32_t cpunum)
 {
-	return cpunum();
+	// check that cpunum is valid
+	if (cpunum < 0 || cpunum > ncpu - 1) {
+		return -1;
+	}
+	// check that we allow the redirection of the interrupt
+	// currently allow only the keyboard interrupt to be redirected.
+	if (vector != IRQ_KBD) {
+		return -1;
+	}
+
+	// enabling the vector on cpunum overrides ioapics' redirection table
+	ioapicenable(vector, cpunum);
+	return 0;
 }
 
+// returns time that has passed since boot, measured in msec
+static int
+sys_time_msec(void)
+{
+	return time_msec();
+}
 
 // Dispatches to the correct kernel function, passing the arguments.
 int32_t
@@ -510,9 +535,12 @@ syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
 		errno = sys_env_set_trapframe((envid_t)a1, (struct Trapframe*)a2);
 		break;
 
-	//TODO - this syscall is redundant at the moment (users can read envs array)
-	case SYS_get_cpuid:
-		errno = sys_get_cpuid();
+	case SYS_interrupt_redirect:
+		errno = sys_intr_redirect((uint32_t)a1, (uint32_t)a2);
+		break;
+
+	case SYS_time_msec:
+		errno = sys_time_msec();
 		break;
 			
 	default:
