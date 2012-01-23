@@ -127,7 +127,7 @@ include user/Makefrag
 include fs/Makefrag
 
 
-CPUS ?= 1
+CPUS ?= 2
 
 QEMUOPTS = -hda $(OBJDIR)/kern/kernel.img -serial mon:stdio -gdb tcp::$(GDBPORT)
 #QEMUOPTS = -hda $(OBJDIR)/kern/kernel.img -gdb tcp::$(GDBPORT)

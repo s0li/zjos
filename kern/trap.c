@@ -270,7 +270,6 @@ trap_dispatch(struct Trapframe *tf)
 		return;
 		
 	case IRQ_OFFSET + IRQ_KBD:
-		cprintf(" >> kbd interrupt on cpu %d\n", cpunum());
 		kbd_intr();
 		lapic_eoi();
 		return;
@@ -278,7 +277,9 @@ trap_dispatch(struct Trapframe *tf)
 	// Handle clock interrupts. Don't forget to acknowledge the
         // interrupt using lapic_eoi() before calling the scheduler!
 	case IRQ_OFFSET + IRQ_TIMER:
-		time_tick();
+		// only CPU=0 increases time
+		if (curenv->env_cpunum == 0)
+			time_tick();
 		lapic_eoi();
 		sched_yield();
 		return;
